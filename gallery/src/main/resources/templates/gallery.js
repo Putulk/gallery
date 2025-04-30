@@ -1,3 +1,6 @@
+let currentImageIndex = 0;
+let images = [];
+
 function loadImages() {
     const gallery = document.getElementById('gallery');
     gallery.innerHTML = '<p>Loading images...</p>';
@@ -20,20 +23,24 @@ function loadImages() {
         }
         return response.json();
     })
-    .then(images => {
+    .then(imagesData => {
+        images = imagesData; // Store images globally
         if (!images || images.length === 0) {
             gallery.innerHTML = '<p>No images found. Upload some images to get started!</p>';
             return;
         }
 
         gallery.innerHTML = '';
-        images.forEach(image => {
+        images.forEach((image, index) => {
             const imageCard = document.createElement('div');
             imageCard.className = 'image-card';
 
             const img = document.createElement('img');
             img.src = `http://localhost:8080/api/images/${image.id}`;
             img.alt = image.title || 'Gallery Image';
+            
+            // Add click handler for modal
+            imageCard.onclick = () => openModal(index);
             
             // Add loading indicator and error handling for individual images
             img.onerror = function() {
@@ -57,6 +64,38 @@ function loadImages() {
         console.error('Error loading images:', error);
         gallery.innerHTML = '<p>Failed to load images. Please try again later.</p>';
     });
+}
+
+// Modal functions
+function openModal(imageIndex) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    const modalTitle = document.getElementById('modalTitle');
+    
+    currentImageIndex = imageIndex;
+    const image = images[imageIndex];
+    
+    modalImg.src = `http://localhost:8080/api/images/${image.id}`;
+    modalTitle.textContent = image.title || image.fileName;
+    modal.style.display = 'block';
+}
+
+function closeModal() {
+    const modal = document.getElementById('imageModal');
+    modal.style.display = 'none';
+}
+
+function changeImage(direction) {
+    currentImageIndex = (currentImageIndex + direction + images.length) % images.length;
+    openModal(currentImageIndex);
+}
+
+// Close modal when clicking outside the image
+window.onclick = function(event) {
+    const modal = document.getElementById('imageModal');
+    if (event.target === modal) {
+        closeModal();
+    }
 }
 
 document.getElementById('uploadForm').addEventListener('submit', async function(event) {
